@@ -1,6 +1,6 @@
 [build-system]
 build-backend = "setuptools.build_meta"
-requires = ["setuptools", "wheel", "pip"]
+requires = ["setuptools>=54.0.0", "wheel", "pip>=21.0.0"]
 
 [tool.black]
 extend-exclude = '''
@@ -16,3 +16,6 @@ indent = '    '
 profile = 'black'
 sections = 'FUTURE,STDLIB,THIRDPARTY,FIRSTPARTY,LOCALFOLDER'
 skip_glob = 'src/datahub/metadata'
+
+[tool.pyright]
+extraPaths = ['tests']
