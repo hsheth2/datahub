@@ -5,6 +5,12 @@ import pandas as pd
 import pyarrow.parquet as pq
 import sqlalchemy
 
+# NOTE: This script uses pandas.DataFrame.to_sql, which interally requires
+# SQLAlchemy v1.4+. However, the `datahub` package has a hard dependency
+# on SQLAlchemy v1.3.x. To get around this, we need to first install the 1.4
+# version, then run this script, and then finally regenerate the venv to
+# restore the `datahub` package dependency to the 1.3 version.
+
 BACKUPS_DIR = pathlib.Path("/Users/hsheth/Downloads/oss-backup")
 
 print("Reading data from oss-backup")
@@ -60,7 +66,7 @@ table = table[~table["urn"].str.startswith("urn:li:dataHubIngestionSource")]
 # Only keep the latest versions of aspects.
 table = table[table["version"] == 0]
 
-# TODO reorder rows
+# TODO reorder rows?
 
 print(table)
 print()
@@ -99,5 +105,18 @@ subprocess.check_call(
     ],
     cwd="../..",
 )
+
+# TODO this usually fails when not running in Neo4j mode; need to figure out a way to
+# automate this process.
+#
+# In order to get around this issue, we usually need to run the upgrade script three times.
+# Once with -a clean to remove the old elasticsearch indexes,
+# once without -a clean to generate the some elasticsearch indexes,
+# and a third time to restore the things that had dependencies on previous
+# data and hence were rejected in the second run.
+#
+# During this process, we need to monitor `datahub docker check` in order to
+# make sure that datahub-gms does not crash - this happens frequently because
+# I'm running on a memory constrained machine.
 
 print("Done")
