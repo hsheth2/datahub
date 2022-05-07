@@ -16,7 +16,7 @@ for dir in sorted(
     for parquet_file in dir.glob("*.gz.parquet"):
         print(f"Reading {parquet_file}")
         parquet_table = pq.read_pandas(parquet_file).to_pandas()
-        print(parquet_table)
+        # print(parquet_table)
 
         # parquet_table.reset_index(inplace=True)
         # parquet_table.fillna("", inplace=True)
@@ -49,13 +49,24 @@ table = table[
     & ~table["urn"].str.contains(".information_schema.")
 ]
 
+# Don't ingest any of the policies.
+# example urn: urn:li:dataHubPolicy:017d02d0-38d4-4b98-94d8-cf4f1097ced3
+table = table[~table["urn"].str.startswith("urn:li:dataHubPolicy:")]
+
+# Don't ingest managed ingestion configs.
+# example urn: urn:li:dataHubIngestionSource:7b34072a-944b-4215-8fa5-b2bf3eea16ad
+table = table[~table["urn"].str.startswith("urn:li:dataHubIngestionSource")]
+
 # Only keep the latest versions of aspects.
 table = table[table["version"] == 0]
 
+# TODO reorder rows
+
 print(table)
 print()
-breakpoint()
-exit(0)
+
+# breakpoint()
+# exit(0)
 
 
 print("Writing data to the DB")
