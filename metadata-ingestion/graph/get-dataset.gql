@@ -1,0 +1,88 @@
+{
+  dataset(
+    urn: "urn:li:dataset:(urn:li:dataPlatform:bigquery,bigquery-public-data.covid19_public_forecasts.county_14d,PROD)"
+  ) {
+    urn
+    type
+    platform {
+      displayName
+    }
+    name
+    ownership {
+      owners {
+        owner {
+          __typename
+          ... on CorpUser {
+            urn
+          }
+          ... on CorpGroup {
+            urn
+          }
+        }
+        type
+      }
+    }
+    lineage(input: { direction: DOWNSTREAM }) {
+      relationships {
+        entity {
+          urn
+        }
+        type
+      }
+    }
+    tags {
+      tags {
+        tag {
+          description
+        }
+      }
+    }
+    glossaryTerms {
+      terms {
+        term {
+          urn
+        }
+      }
+    }
+    schemaMetadata {
+      fields {
+        fieldPath
+        description
+        tags {
+          tags {
+            tag {
+              description
+            }
+          }
+        }
+        glossaryTerms {
+          terms {
+            term {
+              urn
+            }
+          }
+        }
+      }
+    }
+    editableSchemaMetadata {
+      editableSchemaFieldInfo {
+        fieldPath
+        description
+        tags {
+          tags {
+            tag {
+              description
+            }
+          }
+        }
+        glossaryTerms {
+          terms {
+            term {
+              urn
+            }
+          }
+        }
+      }
+    }
+  }
+}
