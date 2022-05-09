@@ -49,7 +49,7 @@ query get_dataset($urn: String!) {
         tags {
           tags {
             tag {
-              description
+              urn
             }
           }
         }
@@ -69,7 +69,7 @@ query get_dataset($urn: String!) {
         tags {
           tags {
             tag {
-              description
+              urn
             }
           }
         }
