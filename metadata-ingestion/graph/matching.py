@@ -13,11 +13,10 @@ def get_dataset(dataset_urn):
 
     json_data = {
         "query": (pathlib.Path(__file__).parent / "get-dataset.gql").read_text(),
-        # '{\n  dataset(\n    urn: "urn:li:dataset:(urn:li:dataPlatform:bigquery,bigquery-public-data.covid19_public_forecasts.county_14d,PROD)"\n  ) {\n    urn\n    type\n    platform {\n      displayName\n    }\n    name\n    ownership {\n      owners {\n        owner {\n          __typename\n          ... on CorpUser {\n            urn\n          }\n          ... on CorpGroup {\n            urn\n          }\n        }\n        type\n      }\n    }\n    lineage(input: {direction: DOWNSTREAM}) {\n      relationships {\n        entity {\n          urn\n        }\n        type\n      }\n    }\n    tags {\n      tags {\n        tag {\n          description\n        }\n      }\n    }\n    glossaryTerms {\n      terms {\n        term {\n          urn\n        }\n      }\n    }\n    schemaMetadata {\n      fields {\n        fieldPath\n        description\n        tags {\n          tags {\n            tag {\n              description\n            }\n          }\n        }\n        glossaryTerms {\n          terms {\n            term {\n              urn\n            }\n          }\n        }\n      }\n    }\n    editableSchemaMetadata {\n      editableSchemaFieldInfo {\n        fieldPath\n        description\n        tags {\n          tags {\n            tag {\n              description\n            }\n          }\n        }\n        glossaryTerms {\n          terms {\n            term {\n              urn\n            }\n          }\n        }\n      }\n    }\n  }\n}',
-        "variables": None,
+        "variables": {
+            "urn": dataset_urn,
+        },
     }
-
-    # TODO use dataset_urn
 
     response = requests.post(
         "http://localhost:9002/api/graphql",
@@ -31,4 +30,8 @@ def get_dataset(dataset_urn):
 if __name__ == "__main__":
     from pprint import pprint
 
-    pprint(get_dataset("TODO"))
+    pprint(
+        get_dataset(
+            "urn:li:dataset:(urn:li:dataPlatform:bigquery,bigquery-public-data.covid19_public_forecasts.county_14d,PROD)"
+        )
+    )

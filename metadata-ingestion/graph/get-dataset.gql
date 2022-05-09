@@ -1,7 +1,5 @@
-{
-  dataset(
-    urn: "urn:li:dataset:(urn:li:dataPlatform:bigquery,bigquery-public-data.covid19_public_forecasts.county_14d,PROD)"
-  ) {
+query get_dataset($urn: String!) {
+  dataset(urn: $urn) {
     urn
     type
     platform {
