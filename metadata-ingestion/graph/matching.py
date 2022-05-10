@@ -415,9 +415,9 @@ if __name__ == "__main__":
     upstream = get_dataset(
         "urn:li:dataset:(urn:li:dataPlatform:bigquery,bigquery-public-data.covid19_public_forecasts.county_14d,PROD)"
     )
-    pprint(upstream, sort_dicts=False)
+    # pprint(upstream, sort_dicts=False)
 
-    # downstream = get_dataset(
-    #     "urn:li:dataset:(urn:li:dataPlatform:bigquery,bigquery-public-data.covid19_public_forecasts.county_14d_historical,PROD)"
-    # )
-    # pprint(downstream)
+    downstream = get_dataset(
+        "urn:li:dataset:(urn:li:dataPlatform:bigquery,bigquery-public-data.covid19_public_forecasts.county_14d_historical,PROD)"
+    )
+    pprint(downstream, sort_dicts=False)
