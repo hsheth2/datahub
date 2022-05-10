@@ -52,6 +52,28 @@ def _fetch_dataset(dataset_urn: str) -> dict:
     return response.json()["data"]["dataset"]
 
 
+def _simplify_tags(tags: dict) -> list:
+    if not tags:
+        return []
+
+    tags_inner = tags["tags"]
+
+    urns = [tag["tag"]["urn"] for tag in tags_inner]
+
+    return urns
+
+
+def _simplify_glossary_terms(terms: dict) -> list:
+    if not terms:
+        return []
+
+    terms_inner = terms["terms"]
+
+    urns = [term["term"]["urn"] for term in terms_inner]
+
+    return urns
+
+
 def get_dataset(dataset_urn):
     dataset = _fetch_dataset(dataset_urn)
 
@@ -69,7 +91,23 @@ def get_dataset(dataset_urn):
             )
             field["tags"] = _merge_fields(field["tags"], editedField["tags"])
 
-    # TODO: Simplify the response.
+    # Simplify the tags/terms.
+    dataset["tags"] = _simplify_tags(dataset["tags"])
+    dataset["glossaryTerms"] = _simplify_glossary_terms(dataset["glossaryTerms"])
+    for field in dataset["schemaMetadata"]["fields"]:
+        field["tags"] = _simplify_tags(field["tags"])
+        field["glossaryTerms"] = _simplify_glossary_terms(field["glossaryTerms"])
+
+    # Simplify the ownership info.
+    dataset["ownership"] = [
+        owner["owner"]["urn"] for owner in dataset["ownership"]["owners"]
+    ]
+
+    # Simplify the lineage info.
+    dataset["downstreams"] = [
+        item["entity"]["urn"] for item in dataset["lineage"]["relationships"]
+    ]
+    dataset.pop("lineage")
 
     return dataset
 
@@ -101,7 +139,7 @@ if __name__ == "__main__":
     )
     pprint(upstream)
 
-    downstream = get_dataset(
-        "urn:li:dataset:(urn:li:dataPlatform:bigquery,bigquery-public-data.covid19_public_forecasts.county_14d_historical,PROD)"
-    )
-    pprint(downstream)
+    # downstream = get_dataset(
+    #     "urn:li:dataset:(urn:li:dataPlatform:bigquery,bigquery-public-data.covid19_public_forecasts.county_14d_historical,PROD)"
+    # )
+    # pprint(downstream)
