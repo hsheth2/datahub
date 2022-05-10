@@ -2,10 +2,10 @@ query get_dataset($urn: String!) {
   dataset(urn: $urn) {
     urn
     type
-    platform {
-      displayName
+    properties {
+      name
+      description
     }
-    name
     ownership {
       owners {
         owner {

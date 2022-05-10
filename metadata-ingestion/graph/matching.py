@@ -30,7 +30,7 @@ def _merge_fields(a, b):
         raise TypeError(f'Cannot merge field "{a}" with "{b}"')
 
 
-def get_dataset(dataset_urn):
+def _fetch_dataset(dataset_urn: str) -> dict:
     cookies = {
         "PLAY_SESSION": "5001875762c5b72e22949cfeaac0bf9f8c21fda9-actor=urn%3Ali%3Acorpuser%3Adatahub&token=eyJhbGciOiJIUzI1NiJ9.eyJhY3RvclR5cGUiOiJVU0VSIiwiYWN0b3JJZCI6ImRhdGFodWIiLCJ0eXBlIjoiU0VTU0lPTiIsInZlcnNpb24iOiIxIiwiZXhwIjoxNjUyMDM4MTI5LCJqdGkiOiIzYTE4YTZkMi05NjgwLTQzM2YtYTU4ZS0xNWYzODRiYjZmOGQiLCJzdWIiOiJkYXRhaHViIiwiaXNzIjoiZGF0YWh1Yi1tZXRhZGF0YS1zZXJ2aWNlIn0.J7EpO2pJy4ZmmN_yOXdLp4bLoHwO6O4ggRBrmOyA558",
         "actor": "urn:li:corpuser:datahub",
@@ -49,8 +49,13 @@ def get_dataset(dataset_urn):
         json=json_data,
     )
 
-    dataset: dict = response.json()["data"]["dataset"]
+    return response.json()["data"]["dataset"]
 
+
+def get_dataset(dataset_urn):
+    dataset = _fetch_dataset(dataset_urn)
+
+    # Merge editable schema fields into the original dataset.
     editableSchemaMetadata = dataset.pop("editableSchemaMetadata", None)
     if editableSchemaMetadata is not None:
         for editedField in editableSchemaMetadata["editableSchemaFieldInfo"]:
@@ -64,14 +69,39 @@ def get_dataset(dataset_urn):
             )
             field["tags"] = _merge_fields(field["tags"], editedField["tags"])
 
+    # TODO: Simplify the response.
+
     return dataset
+
+
+# types of match results:
+# - copy
+#   + field details
+# - transformation
+#   + which fields were copied
+# - similar schema
+#   + which fields are similar (lowest confidence)
+
+
+def match_datasets(dataset_a, dataset_b):
+    # TODO check lineage
+    # TODO fetch infinite depth of lineage info
+
+    # TODO compare field names
+
+    # TODO compare field names w/ minor modifications
+    pass
 
 
 if __name__ == "__main__":
     from pprint import pprint
 
-    pprint(
-        get_dataset(
-            "urn:li:dataset:(urn:li:dataPlatform:bigquery,bigquery-public-data.covid19_public_forecasts.county_14d,PROD)"
-        )
+    upstream = get_dataset(
+        "urn:li:dataset:(urn:li:dataPlatform:bigquery,bigquery-public-data.covid19_public_forecasts.county_14d,PROD)"
     )
+    pprint(upstream)
+
+    downstream = get_dataset(
+        "urn:li:dataset:(urn:li:dataPlatform:bigquery,bigquery-public-data.covid19_public_forecasts.county_14d_historical,PROD)"
+    )
+    pprint(downstream)
