@@ -5,6 +5,25 @@ import time
 import pandas as pd
 import sqlalchemy
 
+# This script loads testing data into a locally running instance of DataHub.
+# We make the assumption that you're already running `datahub docker quickstart`
+# on your local machine, within docker, and with the default configuration
+# and parameters.
+#
+# The data is loaded from two files:
+#  - data/graph-test-data.json
+#  - data/graph-real-world-data.csv
+#
+# WARNING: Running this script will delete all data you previously had stored
+# in your datahub instance.
+#
+# NOTE: This script uses pandas.DataFrame.to_sql, which interally requires
+# SQLAlchemy v1.4+. However, the `datahub` package has a hard dependency
+# on SQLAlchemy v1.3.x. To get around this, we'll need to use two separate
+# Python virtualenvs. Specifically, the graph directory should have its own
+# virtualenv, and the datahub directory should already have its own virtualenv
+# from the gradle build process.
+
 
 def check_datahub_docker():
     subprocess.check_call(["datahub", "docker", "check"])
@@ -27,6 +46,12 @@ table.to_sql(
     if_exists="replace",
     index=False,
     dtype={
+        # The pandas library makes some assumptions about column types,
+        # but these assumptions are not true for the datahub MySQL
+        # database instance. Instead, we need to explicitly specify the
+        # column types to match the expected schema.
+        #
+        # DataHub MySQL schema: https://github.com/datahub-project/datahub/blob/204d7e633aef1a540372028d3a8050d5454b43ad/docker/mysql/init.sql#L2-L12
         "urn": sqlalchemy.VARCHAR(500),
         "aspect": sqlalchemy.VARCHAR(200),
         "version": sqlalchemy.dialects.mysql.BIGINT(20),

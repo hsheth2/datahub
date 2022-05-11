@@ -3,13 +3,14 @@ import pathlib
 import pandas as pd
 import pyarrow.parquet as pq
 
-# NOTE: This script uses pandas.DataFrame.to_sql, which interally requires
-# SQLAlchemy v1.4+. However, the `datahub` package has a hard dependency
-# on SQLAlchemy v1.3.x. To get around this, we need to first install the 1.4
-# version, then run this script, and then finally regenerate the venv to
-# restore the `datahub` package dependency to the 1.3 version.
+# This script parses, cleans, and filters real-world data from a live instance
+# of DataHub. It then writes the data to a csv, which will be read by the
+# load-data.py script.
 
 BACKUPS_DIR = pathlib.Path("/Users/hsheth/Downloads/oss-backup")
+REAL_WORLD_DATA_FILE = (
+    pathlib.Path(__file__).parent / "data" / "graph-real-world-data.csv"
+)
 
 print("Reading data from oss-backup")
 table = None
@@ -70,8 +71,6 @@ print(table)
 print()
 
 print("Writing data to file")
-with (pathlib.Path(__file__).parent / "data" / "graph-real-world-data.csv").open(
-    "w"
-) as f:
+with REAL_WORLD_DATA_FILE.open("w") as f:
     f.write(table.to_csv(index=False))
 print("done!")
