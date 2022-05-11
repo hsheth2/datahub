@@ -1,9 +1,7 @@
 import pathlib
-import subprocess
 
 import pandas as pd
 import pyarrow.parquet as pq
-import sqlalchemy
 
 # NOTE: This script uses pandas.DataFrame.to_sql, which interally requires
 # SQLAlchemy v1.4+. However, the `datahub` package has a hard dependency
@@ -72,51 +70,10 @@ print(table)
 print()
 
 # breakpoint()
-# exit(0)
 
-
-print("Writing data to the DB")
-engine = sqlalchemy.create_engine("mysql+pymysql://datahub:datahub@localhost/datahub")
-table.to_sql(
-    "metadata_aspect_v2",
-    engine,
-    if_exists="replace",
-    index=False,
-    dtype={
-        "urn": sqlalchemy.VARCHAR(500),
-        "aspect": sqlalchemy.VARCHAR(200),
-        "version": sqlalchemy.dialects.mysql.BIGINT(20),
-        "metadata": sqlalchemy.dialects.mysql.LONGTEXT,
-        "systemmetadata": sqlalchemy.dialects.mysql.LONGTEXT,
-        "createdon": sqlalchemy.dialects.mysql.DATETIME,
-        "createdby": sqlalchemy.VARCHAR(255),
-        "createdfor": sqlalchemy.VARCHAR(255),
-    },
-)
-
-print("Updating indexes")
-subprocess.check_call(
-    [
-        "./docker/datahub-upgrade/datahub-upgrade.sh",
-        "-u",
-        "RestoreIndices",
-        "-a",
-        "clean",
-    ],
-    cwd="../..",
-)
-
-# TODO this usually fails when not running in Neo4j mode; need to figure out a way to
-# automate this process.
-#
-# In order to get around this issue, we usually need to run the upgrade script three times.
-# Once with -a clean to remove the old elasticsearch indexes,
-# once without -a clean to generate the some elasticsearch indexes,
-# and a third time to restore the things that had dependencies on previous
-# data and hence were rejected in the second run.
-#
-# During this process, we need to monitor `datahub docker check` in order to
-# make sure that datahub-gms does not crash - this happens frequently because
-# I'm running on a memory constrained machine.
-
-print("Done")
+print("Writing data to file")
+with (pathlib.Path(__file__).parent / "data" / "graph-real-world-data.csv").open(
+    "w"
+) as f:
+    f.write(table.to_csv(index=False))
+print("done!")
