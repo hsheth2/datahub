@@ -145,6 +145,15 @@ DEFAULT_POLICIES: List[PolicyRule] = [
             f"{b['urn']}.{fb['fieldPath']}",
         ),
     ),
+    # Likely copies should have a lineage edge.
+    PolicyRule(
+        name="lineage_edge_for_likely_copies",
+        match_types=[MatchType.LIKELY_COPY],
+        is_per_field=False,
+        apply_policy=lambda a, b, m: print(
+            f"suggest for {a['urn']}: add lineage edge to {b['urn']}"
+        ),
+    ),
     # Tags policies.
     #
     # Generally, tags that are applied to a dataset or field should be
@@ -212,6 +221,7 @@ DEFAULT_POLICIES: List[PolicyRule] = [
             f"{b['urn']}.{fb['fieldPath']}",
         ),
     ),
+    # TODO: ownership propagation for copies.
 ]
 
 
