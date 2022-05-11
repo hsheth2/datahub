@@ -26,7 +26,7 @@ class MatchType(enum.Enum):
     NO_MATCH = enum.auto()
 
 
-def _simplify_column_name(column_name: str) -> str:
+def _simplify_name(column_name: str) -> str:
     """
     Return a simplified version of the column name. This is used to
     "canonicalize" the column name, so that we can compare it to column
@@ -51,10 +51,12 @@ def _simplify_column_name(column_name: str) -> str:
     return column_name
 
 
-def column_match(column_a: str, column_b: str, threshold: int = 96) -> bool:
+def names_match(column_a: str, column_b: str, threshold: int = 100) -> bool:
     """
-    Determines if two column names/fieldPaths match. Does field name
-    canonicalization and fuzzy matching to allow for minor modifications.
+    Determines if two names match. Does some string canonicalization
+    and potentially fuzzy matching to allow for minor modifications.
+    By default, we set the threshold to 100 for exact matches, but
+    this threshold can be reduced on a case-by-case basis.
     """
 
     ratio = fuzz.ratio(column_a, column_b)
@@ -62,8 +64,8 @@ def column_match(column_a: str, column_b: str, threshold: int = 96) -> bool:
     if ratio >= threshold:
         return True
 
-    column_a = _simplify_column_name(column_a)
-    column_b = _simplify_column_name(column_b)
+    column_a = _simplify_name(column_a)
+    column_b = _simplify_name(column_b)
 
     ratio = fuzz.ratio(column_a, column_b)
     if ratio >= threshold:
@@ -83,7 +85,7 @@ def _is_schema_copy(dataset_a: Dataset, dataset_b: Dataset) -> bool:
     for field_a, field_b in zip(
         dataset_a["schemaMetadata"], dataset_b["schemaMetadata"]
     ):
-        if not column_match(field_a["fieldPath"], field_b["fieldPath"]):
+        if not names_match(field_a["fieldPath"], field_b["fieldPath"]):
             return False
 
     return True
@@ -118,8 +120,8 @@ def _match_columns(dataset_a: Dataset, dataset_b: Dataset) -> list:
     ]
     """
 
-    columns_a = [field["name"] for field in dataset_a["schemaMetadata"]]
-    columns_b = [field["name"] for field in dataset_b["schemaMetadata"]]
+    columns_a = [field["fieldPath"] for field in dataset_a["schemaMetadata"]]
+    columns_b = [field["fieldPath"] for field in dataset_b["schemaMetadata"]]
 
     used_b_cols = set()
     mappings = []
@@ -127,7 +129,7 @@ def _match_columns(dataset_a: Dataset, dataset_b: Dataset) -> list:
     for column_a in columns_a:
         matching_column = None
         for column_b in columns_b:
-            if column_match(column_a, column_b):
+            if names_match(column_a, column_b):
                 if matching_column is not None:
                     raise ValueError(
                         f"ambiguous column match: dataset A's {column_a} matches B's {matching_column} and {column_b}"
@@ -164,9 +166,18 @@ def match_datasets(dataset_a: Dataset, dataset_b: Dataset) -> dict:
 
     has_lineage = _has_lineage_downstream_relationship(dataset_a, dataset_b)
     is_schema_copy = _is_schema_copy(dataset_a, dataset_b)
+    dataset_names_match = names_match(
+        dataset_a["properties"]["name"], dataset_b["properties"]["name"], threshold=96
+    )
+    # TODO We should also consider the description.
 
     # If the schema fields are the same, it's either a COPY or LIKELY_COPY.
-    if is_schema_copy:
+    # However, there's some cases where we have tables with names like
+    # "bigquery-public-data.covid19_public_forecasts.county_14d" and
+    # "bigquery-public-data.covid19_public_forecasts.county_14d_historical".
+    # These shouldn't match as a COPY or LIKELY_COPY.
+
+    if is_schema_copy and dataset_names_match:
         field_mapping = [
             {
                 "a": field_a["fieldPath"],
@@ -189,8 +200,7 @@ def match_datasets(dataset_a: Dataset, dataset_b: Dataset) -> dict:
                 "fields": field_mapping,
             }
 
-    # If we get here, we know the schema is not an exact copy.
-    assert not is_schema_copy
+    # If we get here, we know it's not a COPY or LIKELY_COPY.
     field_mapping = _match_columns(dataset_a, dataset_b)
 
     # If there's a lineage edge, we'll match the fields.
@@ -216,22 +226,26 @@ if __name__ == "__main__":
     from pprint import pprint
 
     # Tests for the column matching logic.
-    assert column_match("county_name", "county_name")
-    assert column_match("user_id", "userId")
-    assert column_match("county-name", "county_name")
-    assert column_match("county-name", "countyName")
-    assert column_match("APIKey", "api_key")
+    assert names_match("county_name", "county_name")
+    assert names_match("user_id", "userId")
+    assert names_match("county-name", "county_name")
+    assert names_match("county-name", "countyName")
+    assert names_match("APIKey", "api_key")
     # FIXME: assert column_match("API_key", "api_key")
-    assert not column_match("county_name", "county_name_historical")
-    assert not column_match("new_confirmed_ground_truth", "confirmed_ground_truth")
-    assert not column_match("forecast_date", "forecast_day")
+    assert not names_match("county_name", "county_name_historical")
+    assert not names_match("new_confirmed_ground_truth", "confirmed_ground_truth")
+    assert not names_match("forecast_date", "forecast_day")
+    assert not names_match(
+        "bigquery-public-data.covid19_public_forecasts.county_14d",
+        "bigquery-public-data.covid19_public_forecasts.county_14d_historical",
+        threshold=96,
+    )
 
+    # Test dataset matching logic.
     upstream = get_dataset(
         "urn:li:dataset:(urn:li:dataPlatform:bigquery,bigquery-public-data.covid19_public_forecasts.county_14d,PROD)"
     )
     downstream = get_dataset(
         "urn:li:dataset:(urn:li:dataPlatform:bigquery,bigquery-public-data.covid19_public_forecasts.county_14d_historical,PROD)"
     )
-    # pprint(upstream, sort_dicts=False)
-
     pprint(match_datasets(upstream, downstream))
