@@ -2,6 +2,8 @@ import pathlib
 
 import requests
 
+Dataset = dict
+
 
 def _get_dataset_schema_field(dataset, field_name):
     for field in dataset["schemaMetadata"]["fields"]:
@@ -223,7 +225,7 @@ def _simplify_glossary_terms(terms: dict) -> list:
     return urns
 
 
-def get_dataset(dataset_urn: str) -> dict:
+def get_dataset(dataset_urn: str) -> Dataset:
     """
     Get a dataset by its URN.
 
@@ -379,6 +381,7 @@ def get_dataset(dataset_urn: str) -> dict:
     ]
 
     # Simplify the lineage info.
+    # TODO fetch infinite depth of lineage info
     dataset["downstreams"] = [
         item["entity"]["urn"] for item in dataset["lineage"]["relationships"]
     ]
