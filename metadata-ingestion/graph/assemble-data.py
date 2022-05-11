@@ -69,8 +69,6 @@ table = table[table["version"] == 0]
 print(table)
 print()
 
-# breakpoint()
-
 print("Writing data to file")
 with (pathlib.Path(__file__).parent / "data" / "graph-real-world-data.csv").open(
     "w"

@@ -381,7 +381,7 @@ def get_dataset(dataset_urn: str) -> Dataset:
     ]
 
     # Simplify the lineage info.
-    # TODO fetch infinite depth of lineage info
+    # TODO: Fetch infinite depth of lineage info.
     dataset["downstreams"] = [
         item["entity"]["urn"] for item in dataset["lineage"]["relationships"]
     ]
