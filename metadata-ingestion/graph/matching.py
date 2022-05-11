@@ -1,8 +1,21 @@
+import dataclasses
 import enum
+from typing import List, TypedDict
 
 import humps
 from dataset import Dataset, get_dataset
 from thefuzz import fuzz
+
+
+class _ColumnMapping(TypedDict):
+    a: str
+    b: str
+
+
+@dataclasses.dataclass
+class Match:
+    matchType: "MatchType"
+    fields: List[_ColumnMapping]
 
 
 @enum.unique
@@ -107,7 +120,7 @@ def _has_lineage_downstream_relationship(
     return False
 
 
-def _match_columns(dataset_a: Dataset, dataset_b: Dataset) -> list:
+def _match_columns(dataset_a: Dataset, dataset_b: Dataset) -> List[_ColumnMapping]:
     """
     Determine which columns match in a pair of datasets, and
     generate a mapping between the columns.
@@ -124,7 +137,7 @@ def _match_columns(dataset_a: Dataset, dataset_b: Dataset) -> list:
     columns_b = [field["fieldPath"] for field in dataset_b["schemaMetadata"]]
 
     used_b_cols = set()
-    mappings = []
+    mappings: List[_ColumnMapping] = []
 
     for column_a in columns_a:
         matching_column = None
@@ -143,17 +156,22 @@ def _match_columns(dataset_a: Dataset, dataset_b: Dataset) -> list:
                     f"ambiguous column match: {matching_column} matches multiple columns in dataset A"
                 )
 
-            mappings.append({"a": column_a, "b": matching_column})
+            mappings.append(
+                {
+                    "a": column_a,
+                    "b": matching_column,
+                }
+            )
             used_b_cols.add(matching_column)
 
     return mappings
 
 
-def match_datasets(dataset_a: Dataset, dataset_b: Dataset) -> dict:
+def match_datasets(dataset_a: Dataset, dataset_b: Dataset) -> Match:
     """
     Determine the match type between two datasets.
 
-    Returns a dictionary that looks like this:
+    Returns a match object that looks like this:
 
     {
         "matchType": MatchType.COPY,
@@ -169,16 +187,17 @@ def match_datasets(dataset_a: Dataset, dataset_b: Dataset) -> dict:
     dataset_names_match = names_match(
         dataset_a["properties"]["name"], dataset_b["properties"]["name"], threshold=96
     )
-    # TODO We should also consider the description.
 
     # If the schema fields are the same, it's either a COPY or LIKELY_COPY.
     # However, there's some cases where we have tables with names like
     # "bigquery-public-data.covid19_public_forecasts.county_14d" and
     # "bigquery-public-data.covid19_public_forecasts.county_14d_historical".
     # These shouldn't match as a COPY or LIKELY_COPY.
-
+    #
+    # TODO: We should also consider the description when determining if two
+    # datasets are a COPY or LIKELY_COPY.
     if is_schema_copy and dataset_names_match:
-        field_mapping = [
+        field_mapping: List[_ColumnMapping] = [
             {
                 "a": field_a["fieldPath"],
                 "b": field_b["fieldPath"],
@@ -190,36 +209,37 @@ def match_datasets(dataset_a: Dataset, dataset_b: Dataset) -> dict:
         ]
 
         if has_lineage:
-            return {
-                "matchType": MatchType.COPY,
-                "fields": field_mapping,
-            }
+            return Match(
+                matchType=MatchType.COPY,
+                fields=field_mapping,
+            )
         else:
-            return {
-                "matchType": MatchType.LIKELY_COPY,
-                "fields": field_mapping,
-            }
+            return Match(
+                matchType=MatchType.LIKELY_COPY,
+                fields=field_mapping,
+            )
 
     # If we get here, we know it's not a COPY or LIKELY_COPY.
     field_mapping = _match_columns(dataset_a, dataset_b)
 
     # If there's a lineage edge, we'll match the fields.
     if has_lineage:
-        return {
-            "matchType": MatchType.TRANSFORMATION,
-            "fields": field_mapping,
-        }
+        return Match(
+            matchType=MatchType.TRANSFORMATION,
+            fields=field_mapping,
+        )
 
     # If at least two columns match, we'll consider it a similar dataset.
     if len(field_mapping) >= 2:
-        return {
-            "matchType": MatchType.SIMILAR_SCHEMAS,
-            "fields": field_mapping,
-        }
+        return Match(
+            matchType=MatchType.SIMILAR_SCHEMAS,
+            fields=field_mapping,
+        )
 
-    return {
-        "matchType": MatchType.NO_MATCH,
-    }
+    return Match(
+        matchType=MatchType.NO_MATCH,
+        fields=[],
+    )
 
 
 if __name__ == "__main__":
@@ -248,4 +268,4 @@ if __name__ == "__main__":
     downstream = get_dataset(
         "urn:li:dataset:(urn:li:dataPlatform:bigquery,bigquery-public-data.covid19_public_forecasts.county_14d_historical,PROD)"
     )
-    pprint(match_datasets(upstream, downstream))
+    pprint(match_datasets(upstream, downstream), sort_dicts=False)
