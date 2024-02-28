@@ -43,6 +43,7 @@ runs:
   using: "composite"
 
   steps:
+    - uses: depot/use-action@v1
     - name: Docker meta
       id: docker_meta
       uses: crazy-max/ghaction-docker-meta@v1

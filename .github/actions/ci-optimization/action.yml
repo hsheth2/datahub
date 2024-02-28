@@ -43,19 +43,23 @@ runs:
       with:
         filters: |
           frontend:
+            - ".github/actions/**"
             - "datahub-frontend/**"
             - "datahub-web-react/**"
             - "smoke-test/tests/cypress/**"
             - "docker/datahub-frontend/**"
           ingestion:
+            - ".github/actions/**"
             - "metadata-ingestion-modules/**"
             - "metadata-ingestion/**"
             - "metadata-models/**"
             - "smoke-test/**"
             - "docker/datahub-ingestion-**"
           docker:
+            - ".github/actions/**"
             - "docker/**"
           backend:
+            - ".github/actions/**"
             - "metadata-models/**"
             - "datahub-upgrade/**"
             - "entity-registry/**"
